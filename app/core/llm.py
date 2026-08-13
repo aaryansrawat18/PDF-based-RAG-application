@@ -13,16 +13,11 @@ def generate(
     use_prompt_cache: bool = True,
 ) -> str:
     resolved = _resolve_messages(prompt, messages)
-    provider = settings.llm_provider.strip().lower()
-    if provider == "openai":
-        return _generate_openai(
-            resolved,
-            model=model,
-            use_prompt_cache=use_prompt_cache,
-        )
-    if provider == "gemini":
-        return _generate_gemini(resolved, model=model)
-    raise ValueError(f"Unsupported LLM_PROVIDER={settings.llm_provider!r}. Use openai or gemini.")
+    return _generate_openai(
+        resolved,
+        model=model,
+        use_prompt_cache=use_prompt_cache,
+    )
 
 
 def _resolve_messages(
@@ -76,21 +71,4 @@ def _generate_openai(
     text = response.choices[0].message.content
     if not text:
         raise RuntimeError("OpenAI returned an empty response.")
-    return text.strip()
-
-
-def _generate_gemini(messages: list[dict[str, str]], *, model: str | None = None) -> str:
-    if not settings.google_api_key:
-        raise RuntimeError("GOOGLE_API_KEY is missing. Copy .env.example to .env and set it.")
-    from google import genai
-
-    prompt = "\n\n".join(item["content"] for item in messages)
-    client = genai.Client(api_key=settings.google_api_key)
-    response = client.models.generate_content(
-        model=model or settings.gemini_model,
-        contents=prompt,
-    )
-    text = getattr(response, "text", None)
-    if not text:
-        raise RuntimeError("Gemini returned an empty response.")
     return text.strip()

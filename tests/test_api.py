@@ -59,39 +59,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(source["chunk_id"], "chunk_0")
         self.assertEqual(source["score"], 0.91)
 
-        mock_run_rag.assert_called_once_with("What is RAG?", filters=None)
-
-    @patch("app.api.routes.run_rag")
-    def test_ask_forwards_filters(self, mock_run_rag):
-        mock_run_rag.return_value = {
-            "answer": "Hybrid search fuses dense and BM25.",
-            "sources": [
-                {
-                    "document": "rag.pdf",
-                    "page": 12,
-                    "section": "Retrieval",
-                    "chunk_id": "chunk_12",
-                    "score": 0.88,
-                }
-            ],
-            "latency_ms": 88,
-        }
-
-        response = self.client.post(
-            "/ask",
-            json={
-                "question": "What is hybrid search?",
-                "filters": {"section": "Retrieval", "page_gte": 10},
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        body = response.json()
-        self.assertEqual(body["sources"][0]["section"], "Retrieval")
-        mock_run_rag.assert_called_once_with(
-            "What is hybrid search?",
-            filters={"section": "Retrieval", "page_gte": 10},
-        )
+        mock_run_rag.assert_called_once_with("What is RAG?")
 
     @patch("app.api.routes.ingest_pdfs")
     def test_ingest_response_shape(self, mock_ingest_pdfs):

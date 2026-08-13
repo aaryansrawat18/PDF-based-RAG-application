@@ -33,18 +33,6 @@ class IngestResponse(BaseModel):
     documents: list[IngestDocumentResult]
 
 
-class AskFilters(BaseModel):
-    """Optional metadata filters applied to both vector search and BM25."""
-
-    section: str | None = Field(default=None, examples=["Retrieval"])
-    document: str | None = Field(default=None, examples=["Document.pdf"])
-    page: int | None = Field(default=None, ge=1)
-    page_gte: int | None = Field(default=None, ge=1, examples=[10])
-    page_lte: int | None = Field(default=None, ge=1)
-    chunk_id: str | None = None
-    content_type: str | None = Field(default=None, examples=["text"])
-
-
 class AskRequest(BaseModel):
     """Body for POST /ask."""
 
@@ -53,11 +41,6 @@ class AskRequest(BaseModel):
         min_length=1,
         description="The user question to send through the RAG graph.",
         examples=["What is RAG?"],
-    )
-    filters: AskFilters | None = Field(
-        default=None,
-        description="Optional metadata filters. Only matching chunks are retrieved.",
-        examples=[{"section": "Retrieval", "page_gte": 10}],
     )
 
 

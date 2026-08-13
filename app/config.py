@@ -8,10 +8,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    llm_provider: str = "openai"
-    google_api_key: str = ""
     openai_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash"
     openai_model: str = "gpt-4.1-mini"
 
     embedding_model: str = "text-embedding-3-small"

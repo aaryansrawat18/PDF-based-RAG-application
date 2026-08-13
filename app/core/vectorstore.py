@@ -17,6 +17,9 @@ from qdrant_client.models import (
 
 from app.config import settings
 
+_UPSERT_BATCH_SIZE = 32
+_QDRANT_TIMEOUT_S = 120.0
+
 
 @lru_cache(maxsize=1)
 def get_client() -> QdrantClient:
@@ -24,6 +27,7 @@ def get_client() -> QdrantClient:
         return QdrantClient(
             url=settings.qdrant_url,
             api_key=settings.qdrant_api_key or None,
+            timeout=_QDRANT_TIMEOUT_S,
         )
     return QdrantClient(path=settings.qdrant_path)
 
@@ -129,7 +133,14 @@ def upsert_chunks(chunks: list[dict], embeddings: list[list[float]]) -> int:
         )
         for chunk, vector in zip(chunks, embeddings, strict=True)
     ]
-    get_client().upsert(collection_name=settings.qdrant_collection, points=points)
+    client = get_client()
+    name = settings.qdrant_collection
+    for start in range(0, len(points), _UPSERT_BATCH_SIZE):
+        client.upsert(
+            collection_name=name,
+            points=points[start : start + _UPSERT_BATCH_SIZE],
+            wait=True,
+        )
     return len(points)
 
 
@@ -147,12 +158,31 @@ def close_client() -> None:
 atexit.register(close_client)
 
 
+def ensure_queryable(vector_size: int) -> None:
+    """Fail fast if the on-disk store still has the old BGE (384-d) collection."""
+    name = settings.qdrant_collection
+    existing = {c.name for c in get_client().get_collections().collections}
+    if name not in existing:
+        raise RuntimeError(
+            "Qdrant collection is empty. Ingest PDFs first "
+            "(POST /ingest or python -m app.cli ingest)."
+        )
+    current = _collection_vector_size(name)
+    if current is not None and current != vector_size:
+        raise RuntimeError(
+            f"Vector store is stale: collection is {current}-d but embeddings are "
+            f"{vector_size}-d. Re-ingest PDFs (POST /ingest or python -m app.cli ingest) "
+            "so Qdrant matches OpenAI embeddings and BM25 is rebuilt."
+        )
+
+
 def similarity_search(
     query_vector: list[float],
     k: int | None = None,
     query_filter: Filter | None = None,
 ) -> list[dict]:
     limit = k if k is not None else settings.retrieve_k
+    ensure_queryable(len(query_vector))
     response = get_client().query_points(
         collection_name=settings.qdrant_collection,
         query=query_vector,

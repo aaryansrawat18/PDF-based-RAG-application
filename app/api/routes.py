@@ -86,7 +86,7 @@ def ask(request: AskRequest) -> AskResponse:
     """Step 2 of using the API: retrieve, rerank, prune, then generate.
 
     This route does not call LangGraph nodes directly. It only calls
-    run_rag(question, filters), which is a thin wrapper around graph.invoke(...).
+    run_rag(question), which is a thin wrapper around graph.invoke(...).
     Graph: hybrid retrieve → rerank → prune → quality check
     (rewrite + retrieve again if context is weak) → generate
     (one retry if the answer is a refusal). LangSmith records node
@@ -99,13 +99,9 @@ def ask(request: AskRequest) -> AskResponse:
             detail="question must be a non-empty string",
         )
 
-    filters = None
-    if request.filters is not None:
-        filters = request.filters.model_dump(exclude_none=True) or None
-
     started = time.perf_counter()
     try:
-        result = run_rag(question, filters=filters)
+        result = run_rag(question)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:

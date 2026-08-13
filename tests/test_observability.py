@@ -195,7 +195,6 @@ class GenerateCacheCallTests(unittest.TestCase):
     @patch("app.core.llm._openai_client")
     @patch("app.core.llm.settings")
     def test_generate_sends_frozen_prefix_and_cache_flags(self, mock_settings, mock_client):
-        mock_settings.llm_provider = "openai"
         mock_settings.openai_api_key = "sk-test"
         mock_settings.openai_model = "gpt-4.1-mini"
         mock_settings.prompt_cache_key = "rag-pipeline-v1"

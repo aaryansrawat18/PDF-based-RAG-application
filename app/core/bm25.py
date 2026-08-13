@@ -76,7 +76,15 @@ def search_bm25(
     Pass `corpus` in tests. Live /ask loads the saved JSON file.
     """
     limit = k if k is not None else settings.retrieve_k
-    chunks = corpus if corpus is not None else load_bm25_corpus()
+    if corpus is not None:
+        chunks = corpus
+    else:
+        chunks = load_bm25_corpus()
+        if not chunks:
+            raise RuntimeError(
+                "BM25 corpus is missing (vectorstore_db/bm25_corpus.json). "
+                "Hybrid search needs a re-ingest: POST /ingest or python -m app.cli ingest."
+            )
     query_words = tokenize_text(query)
     if not chunks or not query_words or limit <= 0:
         return []

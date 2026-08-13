@@ -7,7 +7,7 @@ from app.core.vectorstore import close_client
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Phase 1 LangGraph RAG CLI")
+    parser = argparse.ArgumentParser(description="LangGraph RAG CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 
     ingest_parser = sub.add_parser("ingest", help="Load PDFs, chunk, embed, upsert to Qdrant")
@@ -15,6 +15,11 @@ def main() -> None:
 
     ask_parser = sub.add_parser("ask", help="Run retrieve → generate and print the answer")
     ask_parser.add_argument("question", help="Question to ask the RAG graph")
+    ask_parser.add_argument(
+        "--filters",
+        default=None,
+        help='Optional JSON filters, e.g. {"section": "Retrieval", "page_gte": 10}',
+    )
 
     args = parser.parse_args()
     try:
@@ -23,7 +28,8 @@ def main() -> None:
             print(json.dumps(results, indent=2))
             return
 
-        output = run_rag(args.question)
+        filters = json.loads(args.filters) if args.filters else None
+        output = run_rag(args.question, filters=filters)
         print(output["answer"])
         print("\nSources:")
         print(json.dumps(output["sources"], indent=2))

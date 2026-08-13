@@ -26,6 +26,42 @@ class ChunkingTests(unittest.TestCase):
             self.assertTrue({c["page"] for c in chunks} <= {1, 2, 3})
             self.assertTrue(all(c["document"] == "rag_intro.pdf" for c in chunks))
             self.assertTrue(all(c["content_type"] == "text" for c in chunks))
+            self.assertTrue(all(c.get("section") for c in chunks))
+
+    def test_chunk_pages_assigns_section_headings(self):
+        pages = [
+            {
+                "text": (
+                    "Introduction\n\n"
+                    "RAG is retrieval augmented generation used with private documents."
+                ),
+                "tables": [],
+                "figures": [],
+                "page": 1,
+                "document": "rag.pdf",
+            },
+            {
+                "text": (
+                    "Retrieval\n\n"
+                    "Dense retrieval embeds the question and finds similar chunks."
+                ),
+                "tables": ["[Table] TABLE I\nColumns: Method\n- Method: DenseX"],
+                "figures": [],
+                "page": 2,
+                "document": "rag.pdf",
+            },
+        ]
+        chunks = chunk_pages(pages)
+        sections = {chunk["section"] for chunk in chunks}
+        self.assertIn("Introduction", sections)
+        self.assertIn("Retrieval", sections)
+        intro = [c for c in chunks if c["section"] == "Introduction"]
+        retrieval = [c for c in chunks if c["section"] == "Retrieval"]
+        self.assertTrue(intro)
+        self.assertTrue(all(c["page"] == 1 for c in intro))
+        self.assertTrue(retrieval)
+        self.assertTrue(any(c["content_type"] == "table" for c in retrieval))
+        self.assertTrue(all(c["chunk_id"].startswith("chunk_") for c in chunks))
 
 
 if __name__ == "__main__":

@@ -83,7 +83,7 @@ def ask(request: AskRequest) -> AskResponse:
     """Step 2 of using the API: retrieve chunks, then generate an answer.
 
     This route does not call LangGraph nodes directly. It only calls
-    run_rag(question), which is a thin wrapper around graph.invoke(...).
+    run_rag(question, filters), which is a thin wrapper around graph.invoke(...).
     """
     question = request.question.strip()
     if not question:
@@ -92,8 +92,12 @@ def ask(request: AskRequest) -> AskResponse:
             detail="question must be a non-empty string",
         )
 
+    filters = None
+    if request.filters is not None:
+        filters = request.filters.model_dump(exclude_none=True) or None
+
     try:
-        result = run_rag(question)
+        result = run_rag(question, filters=filters)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
@@ -105,11 +109,12 @@ def ask(request: AskRequest) -> AskResponse:
     raw_sources = result.get("sources") or []
     sources = [
         Source(
-            page=item.get("page"),
             document=item.get("document"),
+            page=item.get("page"),
+            section=item.get("section"),
             chunk_id=item.get("chunk_id"),
-            content_type=item.get("content_type"),
             score=item.get("score"),
+            content_type=item.get("content_type"),
         )
         for item in raw_sources
     ]

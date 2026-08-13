@@ -1,6 +1,7 @@
 from app.config import settings
 from app.core.embeddings import embed_query
 from app.core.llm import generate
+from app.core.metadata import filters_to_qdrant
 from app.core.prompts import build_prompt
 from app.core.vectorstore import similarity_search
 from app.graph.state import RAGState
@@ -9,7 +10,12 @@ from app.graph.state import RAGState
 def retrieve_node(state: RAGState) -> dict:
     question = state["question"]
     query_vector = embed_query(question)
-    retrieved = similarity_search(query_vector, k=settings.retrieve_k)
+    query_filter = filters_to_qdrant(state.get("filters"))
+    retrieved = similarity_search(
+        query_vector,
+        k=settings.retrieve_k,
+        query_filter=query_filter,
+    )
     return {"retrieved": retrieved}
 
 
@@ -19,11 +25,12 @@ def generate_node(state: RAGState) -> dict:
     answer = generate(prompt)
     sources = [
         {
-            "page": chunk.get("page"),
             "document": chunk.get("document"),
+            "page": chunk.get("page"),
+            "section": chunk.get("section"),
             "chunk_id": chunk.get("chunk_id"),
-            "content_type": chunk.get("content_type", "text"),
             "score": chunk.get("score"),
+            "content_type": chunk.get("content_type", "text"),
         }
         for chunk in retrieved
     ]

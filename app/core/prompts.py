@@ -15,10 +15,12 @@ def build_prompt(question: str, retrieved: list[dict]) -> str:
         for index, chunk in enumerate(retrieved, start=1):
             document = chunk.get("document", "unknown")
             page = chunk.get("page", "?")
+            section = chunk.get("section") or "Unknown"
             content_type = chunk.get("content_type", "text")
             text = chunk.get("text", "")
             parts.append(
-                f"[{index}] document={document} page={page} type={content_type}\n{text}"
+                f"[{index}] document={document} page={page} "
+                f"section={section} type={content_type}\n{text}"
             )
         context = "\n\n".join(parts)
 

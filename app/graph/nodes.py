@@ -33,7 +33,11 @@ _REFUSAL_RE = re.compile(
 
 
 def active_query(state: RAGState) -> str:
-    """Search query: rewritten if present, otherwise the original question."""
+    """Pick the query string used for retrieve / rerank.
+
+    Prefers `rewritten_query` after a rewrite loop; otherwise uses the
+    original `question`. Empty / whitespace values are treated as missing.
+    """
     rewritten = (state.get("rewritten_query") or "").strip()
     if rewritten:
         return rewritten
@@ -41,7 +45,12 @@ def active_query(state: RAGState) -> str:
 
 
 def context_is_ok(chunks: list | None) -> bool:
-    """True when pruned context is non-empty and the best score clears the bar."""
+    """Decide whether pruned context is strong enough to generate from.
+
+    Fails when there are too few non-empty chunks, or when the best chunk
+    score is below `settings.context_score_threshold`. Used by
+    quality_check_node and the rewrite routing edge.
+    """
     if not chunks:
         return False
     nonempty = [chunk for chunk in chunks if (chunk.get("text") or "").strip()]
@@ -58,7 +67,11 @@ def context_is_ok(chunks: list | None) -> bool:
 
 
 def answer_is_ok(answer: str) -> bool:
-    """True when the model produced a grounded answer instead of a refusal."""
+    """Decide whether the model answer looks grounded (not a refusal).
+
+    Empty text or matches of `_REFUSAL_RE` count as failures so
+    route_after_generate can trigger one regenerate pass.
+    """
     text = (answer or "").strip()
     if not text:
         return False
@@ -68,6 +81,11 @@ def answer_is_ok(answer: str) -> bool:
 
 
 def _clean_rewritten_query(text: str, fallback: str) -> str:
+    """Normalize LLM rewrite output into a plain search query.
+
+    Strips quotes, keeps the first line, drops labels like "Rewritten query:",
+    and falls back to the previous query when the result is too short.
+    """
     cleaned = (text or "").strip().strip('"').strip("'")
     if cleaned:
         cleaned = cleaned.splitlines()[0].strip().strip('"').strip("'")
@@ -82,7 +100,13 @@ def _clean_rewritten_query(text: str, fallback: str) -> str:
 
 
 def retrieve_node(state: RAGState) -> dict:
-    """Hybrid retrieve: vector search + BM25, then fuse with RRF."""
+    """Hybrid retrieve: dense vector search + BM25, fused with RRF.
+
+    1. Embed `active_query(state)`.
+    2. Run Qdrant similarity search and BM25 keyword search (same top_k).
+    3. Fuse both ranked lists with reciprocal rank fusion.
+    4. Store the top `retrieve_k` hits in `retrieved`.
+    """
     question = active_query(state)
     filters = state.get("filters")
     top_k = settings.retrieve_k
@@ -101,9 +125,11 @@ def retrieve_node(state: RAGState) -> dict:
 
 
 def baseline_retrieve_node(state: RAGState) -> dict:
-    """Vector-only retrieve (Phase 1 baseline). No BM25, rerank, or prune.
+    """Vector-only retrieve for the Phase 1 baseline graph.
 
-    Hits are copied into pruned so generate_node can run unchanged.
+    Skips BM25, rerank, and prune. Copies the same hits into `retrieved`,
+    `reranked`, and `pruned` so generate_node can run unchanged, and sets
+    `context_ok` so the quality/rewrite loop is not needed.
     """
     question = (state.get("question") or "").strip()
     filters = state.get("filters")
@@ -123,26 +149,43 @@ def baseline_retrieve_node(state: RAGState) -> dict:
 
 
 def rerank_node(state: RAGState) -> dict:
-    """Score fused chunks with a cross-encoder and keep rerank_k."""
+    """Rescore fused chunks with a cross-encoder and keep `rerank_k`.
+
+    Takes `retrieved` from hybrid RRF, scores each (query, chunk) pair, and
+    writes the reordered top hits to `reranked`.
+    """
     retrieved = state.get("retrieved") or []
     reranked = rerank(active_query(state), retrieved)
     return {"reranked": reranked}
 
 
 def prune_node(state: RAGState) -> dict:
-    """Drop low-score, overlapping, and over-budget chunks."""
+    """Trim reranked chunks into the final LLM context.
+
+    Drops low-score, near-duplicate, and over-budget passages via
+    prune_chunks(), then stores the kept list in `pruned`.
+    """
     reranked = state.get("reranked") or []
     pruned = prune_chunks(reranked)
     return {"pruned": pruned}
 
 
 def quality_check_node(state: RAGState) -> dict:
-    """Mark whether pruned context is strong enough to generate from."""
+    """Set `context_ok` from the pruned chunk list.
+
+    Downstream routing uses this flag: weak context → rewrite_query;
+    strong context (or retries exhausted) → generate.
+    """
     return {"context_ok": context_is_ok(state.get("pruned") or [])}
 
 
 def rewrite_query_node(state: RAGState) -> dict:
-    """Rewrite a weak query with the light model, then retrieve again."""
+    """Rewrite a weak query with the light model, then retrieve again.
+
+    Builds rewrite prompts from the original question, current active query,
+    and pruned context. On LLM failure, keeps the previous query. Bumps
+    `retry_count` and clears `context_ok` so the graph loops back to retrieve.
+    """
     question = (state.get("question") or "").strip()
     previous = active_query(state) or question
     pruned = state.get("pruned") or []
@@ -161,7 +204,12 @@ def rewrite_query_node(state: RAGState) -> dict:
 
 
 def generate_node(state: RAGState) -> dict:
-    """Call the chat model with pruned context; attach citation sources."""
+    """Call the chat model with pruned context and attach citation sources.
+
+    On a regenerate pass (`generate_retry_count` > 0), build_messages uses a
+    stricter "use the context" nudge. Returns answer text, source metadata
+    for each pruned chunk, and an incremented generate retry counter.
+    """
     pruned = state.get("pruned") or []
     attempts = int(state.get("generate_retry_count") or 0)
     messages = build_messages(

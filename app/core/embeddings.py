@@ -1,3 +1,9 @@
+"""OpenAI embeddings (ingest step 3 + ask retrieve).
+
+embed_documents: batch embed chunk texts before Qdrant upsert.
+embed_query: single vector for dense similarity search.
+"""
+
 from functools import lru_cache
 
 from openai import OpenAI

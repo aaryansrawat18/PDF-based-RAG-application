@@ -1,3 +1,10 @@
+"""Prompt builders for generate and rewrite nodes.
+
+SYSTEM_PROMPT is intentionally frozen (no per-request interpolation) so
+OpenAI can cache the prefix. build_messages attaches Context + Question
+in the user turn; build_rewrite_messages is for the light rewrite model.
+"""
+
 # Frozen prefix: identical bytes on every generate call so the provider
 # can reuse its KV cache. Do not interpolate dates, questions, or chunks here.
 # Keep this block >= ~1024 tokens so OpenAI prompt cache can actually hit.

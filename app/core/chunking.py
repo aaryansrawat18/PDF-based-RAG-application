@@ -1,3 +1,9 @@
+"""Chunking with overlap + section / chunk_id metadata (ingest step 2).
+
+Turns per-page load_pdf output into embeddable chunks. Heading heuristics
+fill `section`; chunk_id is stable for Qdrant and BM25 keys.
+"""
+
 import re
 
 from app.config import settings

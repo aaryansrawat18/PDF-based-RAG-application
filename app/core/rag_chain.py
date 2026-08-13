@@ -1,3 +1,9 @@
+"""Ask-path entry: run the LangGraph and pack a stable response dict.
+
+API/CLI call run_rag(question). This module chooses advanced vs baseline
+graph, times the invoke, and adds latency / token helpers for eval.
+"""
+
 import time
 
 from app.core.pruning import estimate_tokens
@@ -21,6 +27,7 @@ def _pages(chunks: list | None) -> list[int]:
 
 
 def _pack_result(result: dict, latency_ms: int, pipeline: str) -> dict:
+    """Normalize graph state into the dict consumers (API, CLI, eval) expect."""
     retrieved = result.get("retrieved") or []
     pruned = result.get("pruned") or retrieved
     sources = result.get("sources") or []

@@ -1,3 +1,11 @@
+"""FastAPI process entrypoint.
+
+Run: uvicorn app.main:app --reload
+
+This file only builds the app, attaches routes, and manages startup/shutdown.
+Ingest and ask logic live in app.api.routes → app.core / app.graph.
+"""
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI

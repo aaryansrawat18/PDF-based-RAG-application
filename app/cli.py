@@ -1,3 +1,10 @@
+"""CLI entry for ingest / ask / eval without starting uvicorn.
+
+  python -m app.cli ingest [--pdf PATH]
+  python -m app.cli ask "What is RAG?" [--pipeline advanced|baseline]
+  python -m app.cli eval [--pipeline both]
+"""
+
 import argparse
 import json
 import sys

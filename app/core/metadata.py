@@ -1,3 +1,10 @@
+"""Filter helpers shared by Qdrant and BM25 search.
+
+Ask can pass {"document": "...", "section": "...", "page_gte": N, ...}.
+filters_to_qdrant builds the Qdrant Filter; chunk_matches_filters does
+the same checks in-process for BM25 hits.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

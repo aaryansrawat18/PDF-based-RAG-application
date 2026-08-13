@@ -1,3 +1,15 @@
+"""Ingest path: PDF → pages → chunks → embeddings → Qdrant + BM25.
+
+Called by POST /ingest and `python -m app.cli ingest`.
+
+Per PDF:
+  1. pdf_loader.load_pdf     extract text / tables / figures per page
+  2. chunking.chunk_pages    split with overlap + section metadata
+  3. embeddings.embed_documents
+  4. vectorstore.upsert_chunks
+  5. bm25.update_bm25_corpus keyword index for hybrid retrieve
+"""
+
 from pathlib import Path
 
 from app.config import settings
@@ -10,6 +22,7 @@ from app.core.vectorstore import upsert_chunks
 
 
 def ingest_pdf(pdf_path: str | Path) -> dict:
+    """Run the full write pipeline for one PDF; return counts for the API."""
     path = Path(pdf_path)
     pages = load_pdf(path)
     chunks = chunk_pages(pages)
@@ -26,6 +39,7 @@ def ingest_pdf(pdf_path: str | Path) -> dict:
 
 
 def ingest_pdfs(pdf_path: str | Path | None = None) -> list[dict]:
+    """Ingest one path, or every PDF under source_pdfs_dir (sample if empty)."""
     if pdf_path:
         return [ingest_pdf(pdf_path)]
 

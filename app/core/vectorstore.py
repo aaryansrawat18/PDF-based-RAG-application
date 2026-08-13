@@ -1,3 +1,9 @@
+"""Qdrant vector store (ingest step 4 + ask dense retrieve).
+
+Local folder (qdrant_path) when qdrant_url is empty; otherwise cloud/HTTP.
+Payload indexes on section/document/page enable filtered search.
+"""
+
 from __future__ import annotations
 
 import atexit

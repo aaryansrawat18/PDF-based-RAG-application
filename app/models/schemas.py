@@ -1,3 +1,9 @@
+"""Pydantic request/response models for the FastAPI layer.
+
+These shapes are what OpenAPI docs and clients see. Graph/internal dicts
+are converted to these in app.api.routes.
+"""
+
 from pydantic import BaseModel, Field
 
 

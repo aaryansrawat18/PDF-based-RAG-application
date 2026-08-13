@@ -1,3 +1,9 @@
+"""Chat completions for generate + query rewrite.
+
+Uses the frozen system prompt from app.core.prompts and optional OpenAI
+prompt-cache headers so repeated asks reuse the long system prefix.
+"""
+
 from functools import lru_cache
 
 from openai import OpenAI

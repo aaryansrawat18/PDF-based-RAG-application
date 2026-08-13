@@ -1,3 +1,12 @@
+"""LangGraph node functions for the ask path.
+
+Each public *_node(state) → dict is a graph step. Helpers (active_query,
+context_is_ok, answer_is_ok) support routing and rewrite.
+
+Order in the advanced graph: retrieve → rerank → prune → quality_check
+→ (optional rewrite → retrieve) → generate → (optional generate again).
+"""
+
 import re
 
 from app.config import settings
@@ -12,6 +21,7 @@ from app.core.reranker import rerank
 from app.core.vectorstore import similarity_search
 from app.graph.state import RAGState
 
+# Rough refusal detector for route_after_generate (not shown to the user).
 _REFUSAL_RE = re.compile(
     r"^\s*(i\s+(do\s+not|don't|cannot|can't)\s+know|"
     r"i\s+(cannot|can't|am unable to)\s+(answer|find|determine)|"
@@ -77,6 +87,7 @@ def retrieve_node(state: RAGState) -> dict:
     filters = state.get("filters")
     top_k = settings.retrieve_k
 
+    # Dense (semantic) + sparse (keyword) in parallel lists, then fuse.
     query_vector = embed_query(question)
     vector_chunks = similarity_search(
         query_vector,
@@ -150,12 +161,13 @@ def rewrite_query_node(state: RAGState) -> dict:
 
 
 def generate_node(state: RAGState) -> dict:
+    """Call the chat model with pruned context; attach citation sources."""
     pruned = state.get("pruned") or []
     attempts = int(state.get("generate_retry_count") or 0)
     messages = build_messages(
         state["question"],
         pruned,
-        retry=attempts > 0,
+        retry=attempts > 0,  # stricter "use the context" nudge on regenerate
     )
     answer = generate(messages=messages)
     sources = [

@@ -1,3 +1,12 @@
+"""HTTP routes for the RAG API.
+
+Thin layer only: validate request → call core/graph → map to response models.
+
+  GET  /health  liveness (no Qdrant / LLM)
+  POST /ingest  write path  → app.core.ingest.ingest_pdfs
+  POST /ask     read path   → app.core.rag_chain.run_rag
+"""
+
 import time
 
 from fastapi import APIRouter, HTTPException

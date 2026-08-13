@@ -1,3 +1,9 @@
+"""PDF loading with PyMuPDF (ingest step 1).
+
+Returns one dict per page: body text, markdown tables, figure captions,
+plus page number and document name for later citations.
+"""
+
 from __future__ import annotations
 
 import re

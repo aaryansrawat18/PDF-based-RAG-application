@@ -1,3 +1,22 @@
+"""Wire LangGraph nodes into the advanced and baseline RAG graphs.
+
+Advanced flow (POST /ask default):
+
+  START
+    → retrieve      hybrid: dense (Qdrant) + sparse (BM25) → RRF
+    → rerank        cross-encoder scores (query, chunk)
+    → prune         drop low-score / duplicate / over-budget chunks
+    → quality_check set context_ok from pruned scores
+         │
+         ├─ context weak & retries left → rewrite_query → retrieve (loop)
+         └─ else → generate
+                      │
+                      ├─ refusal + has context → generate again (once)
+                      └─ else → END
+
+Baseline flow (eval only): START → vector retrieve → generate → END
+"""
+
 from langgraph.graph import END, START, StateGraph
 
 from app.config import settings
@@ -40,6 +59,7 @@ def route_after_generate(state: RAGState) -> str:
 
 
 def build_graph():
+    """Compile the full hybrid → rerank → prune → rewrite/retry graph."""
     graph = StateGraph(RAGState)
     graph.add_node("retrieve", retrieve_node)
     graph.add_node("rerank", rerank_node)
@@ -47,16 +67,22 @@ def build_graph():
     graph.add_node("quality_check", quality_check_node)
     graph.add_node("rewrite_query", rewrite_query_node)
     graph.add_node("generate", generate_node)
+
+    # Linear funnel first…
     graph.add_edge(START, "retrieve")
     graph.add_edge("retrieve", "rerank")
     graph.add_edge("rerank", "prune")
     graph.add_edge("prune", "quality_check")
+
+    # …then optional rewrite loop back to retrieve.
     graph.add_conditional_edges(
         "quality_check",
         route_after_quality,
         {"rewrite": "rewrite_query", "generate": "generate"},
     )
     graph.add_edge("rewrite_query", "retrieve")
+
+    # Optional one-shot regenerate on refusal.
     graph.add_conditional_edges(
         "generate",
         route_after_generate,
@@ -66,6 +92,7 @@ def build_graph():
 
 
 def get_graph():
+    """Cached advanced graph (one compile per process)."""
     global _graph
     if _graph is None:
         _graph = build_graph()
@@ -84,6 +111,7 @@ def build_baseline_graph():
 
 
 def get_baseline_graph():
+    """Cached baseline graph used by eval comparisons."""
     global _baseline_graph
     if _baseline_graph is None:
         _baseline_graph = build_baseline_graph()

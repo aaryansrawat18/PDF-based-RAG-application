@@ -788,4 +788,4 @@ curl -X POST http://127.0.0.1:8000/ingest -H "Content-Type: application/json" -d
 curl -X POST http://127.0.0.1:8000/ask -H "Content-Type: application/json" -d "{\"question\": \"What is Retrieval-Augmented Generation?\"}"
 ```
 
-For the detailed phase plan and architecture decisions, see [`PLANNING.md`](PLANNING.md).
+

@@ -1,3 +1,5 @@
+import time
+
 from fastapi import APIRouter, HTTPException
 
 from app.core.ingest import ingest_pdfs
@@ -85,7 +87,10 @@ def ask(request: AskRequest) -> AskResponse:
 
     This route does not call LangGraph nodes directly. It only calls
     run_rag(question, filters), which is a thin wrapper around graph.invoke(...).
-    Graph: hybrid retrieve (vector + BM25 + RRF) → cross-encoder rerank → prune → generate.
+    Graph: hybrid retrieve → rerank → prune → quality check
+    (rewrite + retrieve again if context is weak) → generate
+    (one retry if the answer is a refusal). LangSmith records node
+    spans when LANGSMITH_API_KEY is set.
     """
     question = request.question.strip()
     if not question:
@@ -98,6 +103,7 @@ def ask(request: AskRequest) -> AskResponse:
     if request.filters is not None:
         filters = request.filters.model_dump(exclude_none=True) or None
 
+    started = time.perf_counter()
     try:
         result = run_rag(question, filters=filters)
     except ValueError as exc:
@@ -121,7 +127,12 @@ def ask(request: AskRequest) -> AskResponse:
         for item in raw_sources
     ]
 
+    latency_ms = result.get("latency_ms")
+    if latency_ms is None:
+        latency_ms = int((time.perf_counter() - started) * 1000)
+
     return AskResponse(
         answer=result.get("answer", ""),
         sources=sources,
+        latency_ms=int(latency_ms),
     )

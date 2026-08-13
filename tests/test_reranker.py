@@ -108,9 +108,16 @@ class RerankerTests(unittest.TestCase):
         ids = [chunk["chunk_id"] for chunk in output["pruned"]]
         self.assertEqual(ids, ["keep"])
 
-    def test_graph_has_four_phase5_nodes(self):
+    def test_graph_has_phase6_decision_nodes(self):
         node_ids = set(build_graph().get_graph().nodes)
-        for name in ("retrieve", "rerank", "prune", "generate"):
+        for name in (
+            "retrieve",
+            "rerank",
+            "prune",
+            "quality_check",
+            "rewrite_query",
+            "generate",
+        ):
             self.assertIn(name, node_ids)
 
 

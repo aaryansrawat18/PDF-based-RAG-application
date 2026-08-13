@@ -35,6 +35,7 @@ class ApiTests(unittest.TestCase):
                     "score": 0.91,
                 }
             ],
+            "latency_ms": 1420,
         }
 
         response = self.client.post("/ask", json={"question": "What is RAG?"})
@@ -44,6 +45,8 @@ class ApiTests(unittest.TestCase):
 
         self.assertIn("answer", body)
         self.assertIn("sources", body)
+        self.assertIn("latency_ms", body)
+        self.assertEqual(body["latency_ms"], 1420)
         self.assertIsInstance(body["answer"], str)
         self.assertTrue(body["answer"])
         self.assertIsInstance(body["sources"], list)
@@ -71,6 +74,7 @@ class ApiTests(unittest.TestCase):
                     "score": 0.88,
                 }
             ],
+            "latency_ms": 88,
         }
 
         response = self.client.post(

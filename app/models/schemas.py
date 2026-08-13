@@ -77,6 +77,12 @@ class AskResponse(BaseModel):
 
     answer: str
     sources: list[Source]
+    latency_ms: int = Field(
+        ...,
+        ge=0,
+        description="Graph invoke wall time in milliseconds.",
+        examples=[1420],
+    )
 
 
 class HealthResponse(BaseModel):

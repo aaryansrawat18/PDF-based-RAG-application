@@ -33,6 +33,20 @@ class Settings(BaseSettings):
     prune_max_tokens: int = 2000
     bm25_corpus_path: str = "vectorstore_db/bm25_corpus.json"
 
+    rewrite_model: str = "gpt-5.4-nano"
+    max_retrieve_retries: int = 2
+    max_generate_retries: int = 1
+    context_min_chunks: int = 1
+    context_score_threshold: float = 0.5
+
+    prompt_cache_key: str = "rag-pipeline-v1"
+    prompt_cache_retention: str = "in_memory"
+
+    langsmith_api_key: str = ""
+    langsmith_project: str = "rag-pipeline"
+    langsmith_tracing: bool = True
+    langsmith_endpoint: str = ""
+
     source_pdfs_dir: str = "data/source_pdfs"
 
 

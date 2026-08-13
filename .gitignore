@@ -11,3 +11,6 @@ __pycache__/
 
 vectorstore_db/*
 !vectorstore_db/.gitkeep
+data/eval/last_benchmark.json
+data/eval/_pdf_dump.txt
+.ipynb_checkpoints/

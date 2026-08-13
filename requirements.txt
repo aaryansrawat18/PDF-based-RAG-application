@@ -2,6 +2,7 @@ fastapi
 uvicorn
 httpx
 langgraph
+langsmith
 pymupdf
 qdrant-client
 pydantic-settings

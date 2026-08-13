@@ -15,5 +15,7 @@ class RAGState(TypedDict, total=False):
     question: str
     filters: dict[str, Any] | None
     retrieved: list[RetrievedChunk]
+    reranked: list[RetrievedChunk]
+    pruned: list[RetrievedChunk]
     answer: str
     sources: list[dict[str, Any]]

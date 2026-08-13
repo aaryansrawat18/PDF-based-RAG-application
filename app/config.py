@@ -23,8 +23,14 @@ class Settings(BaseSettings):
 
     chunk_size: int = 800
     chunk_overlap: int = 150
-    retrieve_k: int = 5
+    retrieve_k: int = 20
+    rerank_k: int = 10
+    prune_k: int = 5
     rrf_k: int = 60
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    prune_score_threshold: float = 0.0
+    prune_overlap_threshold: float = 0.8
+    prune_max_tokens: int = 2000
     bm25_corpus_path: str = "vectorstore_db/bm25_corpus.json"
 
     source_pdfs_dir: str = "data/source_pdfs"

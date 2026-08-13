@@ -5,6 +5,8 @@ from app.core.hybrid import reciprocal_rank_fusion
 from app.core.llm import generate
 from app.core.metadata import filters_to_qdrant
 from app.core.prompts import build_prompt
+from app.core.pruning import prune_chunks
+from app.core.reranker import rerank
 from app.core.vectorstore import similarity_search
 from app.graph.state import RAGState
 
@@ -27,9 +29,23 @@ def retrieve_node(state: RAGState) -> dict:
     return {"retrieved": fused_chunks[:top_k]}
 
 
-def generate_node(state: RAGState) -> dict:
+def rerank_node(state: RAGState) -> dict:
+    """Score fused chunks with a cross-encoder and keep rerank_k."""
     retrieved = state.get("retrieved") or []
-    prompt = build_prompt(state["question"], retrieved)
+    reranked = rerank(state["question"], retrieved)
+    return {"reranked": reranked}
+
+
+def prune_node(state: RAGState) -> dict:
+    """Drop low-score, overlapping, and over-budget chunks."""
+    reranked = state.get("reranked") or []
+    pruned = prune_chunks(reranked)
+    return {"pruned": pruned}
+
+
+def generate_node(state: RAGState) -> dict:
+    pruned = state.get("pruned") or []
+    prompt = build_prompt(state["question"], pruned)
     answer = generate(prompt)
     sources = [
         {
@@ -40,6 +56,6 @@ def generate_node(state: RAGState) -> dict:
             "score": chunk.get("score"),
             "content_type": chunk.get("content_type", "text"),
         }
-        for chunk in retrieved
+        for chunk in pruned
     ]
     return {"answer": answer, "sources": sources}

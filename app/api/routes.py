@@ -81,11 +81,11 @@ def ingest(request: IngestRequest | None = None) -> IngestResponse:
     summary="Ask a question",
 )
 def ask(request: AskRequest) -> AskResponse:
-    """Step 2 of using the API: retrieve chunks, then generate an answer.
+    """Step 2 of using the API: retrieve, rerank, prune, then generate.
 
     This route does not call LangGraph nodes directly. It only calls
     run_rag(question, filters), which is a thin wrapper around graph.invoke(...).
-    Retrieve inside the graph is hybrid: vector + BM25, fused with RRF.
+    Graph: hybrid retrieve (vector + BM25 + RRF) → cross-encoder rerank → prune → generate.
     """
     question = request.question.strip()
     if not question:

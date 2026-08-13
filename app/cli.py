@@ -18,7 +18,7 @@ def main() -> None:
 
     ask_parser = sub.add_parser(
         "ask",
-        help="Run hybrid retrieve → generate and print the answer",
+        help="Run retrieve → rerank → prune → generate and print the answer",
     )
     ask_parser.add_argument("question", help="Question to ask the RAG graph")
     ask_parser.add_argument(

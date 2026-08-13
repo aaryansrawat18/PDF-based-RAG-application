@@ -9,3 +9,4 @@ google-genai
 openai
 python-dotenv
 rank-bm25
+sentence-transformers

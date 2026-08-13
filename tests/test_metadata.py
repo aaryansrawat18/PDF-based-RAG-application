@@ -2,7 +2,7 @@ import unittest
 
 from qdrant_client.models import MatchValue, Range
 
-from app.core.metadata import filters_to_qdrant
+from app.core.metadata import chunk_matches_filters, filters_to_qdrant
 
 
 class MetadataFilterTests(unittest.TestCase):
@@ -44,6 +44,36 @@ class MetadataFilterTests(unittest.TestCase):
         qfilter = filters_to_qdrant(FakeFilters())
         self.assertEqual(len(qfilter.must), 1)
         self.assertEqual(qfilter.must[0].key, "section")
+
+
+class ChunkMatchesFiltersTests(unittest.TestCase):
+    def setUp(self):
+        self.chunk = {
+            "section": "Retrieval",
+            "document": "rag.pdf",
+            "page": 12,
+            "chunk_id": "chunk_12",
+            "content_type": "text",
+        }
+
+    def test_no_filters_match(self):
+        self.assertTrue(chunk_matches_filters(self.chunk, None))
+        self.assertTrue(chunk_matches_filters(self.chunk, {}))
+
+    def test_section_and_page_gte(self):
+        self.assertTrue(
+            chunk_matches_filters(
+                self.chunk, {"section": "Retrieval", "page_gte": 10}
+            )
+        )
+        self.assertFalse(
+            chunk_matches_filters(
+                self.chunk, {"section": "Introduction", "page_gte": 10}
+            )
+        )
+        self.assertFalse(
+            chunk_matches_filters(self.chunk, {"section": "Retrieval", "page_gte": 20})
+        )
 
 
 if __name__ == "__main__":

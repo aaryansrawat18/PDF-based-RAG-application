@@ -33,8 +33,9 @@ def health() -> HealthResponse:
 def ingest(request: IngestRequest | None = None) -> IngestResponse:
     """Step 1 of using the API: put PDF chunks into the vector store.
 
-    This route does not talk to Qdrant itself. It only calls ingest_pdfs(),
-    which already does: load PDF → chunk → embed → upsert.
+    This route does not talk to Qdrant or BM25 itself. It only calls
+    ingest_pdfs(), which already does: load PDF → chunk → embed →
+    upsert Qdrant → rebuild the BM25 corpus for that document.
 
     Body can be omitted, {}, or {"pdf_path": "..."}.
     """
@@ -84,6 +85,7 @@ def ask(request: AskRequest) -> AskResponse:
 
     This route does not call LangGraph nodes directly. It only calls
     run_rag(question, filters), which is a thin wrapper around graph.invoke(...).
+    Retrieve inside the graph is hybrid: vector + BM25, fused with RRF.
     """
     question = request.question.strip()
     if not question:

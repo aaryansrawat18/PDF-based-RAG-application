@@ -22,11 +22,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="RAG Pipeline API",
     description=(
-        "Phase 3 HTTP layer around the LangGraph graph. "
-        "POST /ingest loads PDFs. POST /ask runs retrieve → generate "
-        "with optional metadata filters."
+        "Phase 4 HTTP layer around the LangGraph graph. "
+        "POST /ingest loads PDFs into Qdrant and BM25. "
+        "POST /ask runs hybrid retrieve (vector + BM25 + RRF) → generate."
     ),
-    version="0.3.0",
+    version="0.4.0",
     lifespan=lifespan,
 )
 

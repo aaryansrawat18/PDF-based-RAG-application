@@ -10,10 +10,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="LangGraph RAG CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    ingest_parser = sub.add_parser("ingest", help="Load PDFs, chunk, embed, upsert to Qdrant")
+    ingest_parser = sub.add_parser(
+        "ingest",
+        help="Load PDFs, chunk, embed, upsert to Qdrant, rebuild BM25",
+    )
     ingest_parser.add_argument("--pdf", default=None, help="Optional path to a single PDF")
 
-    ask_parser = sub.add_parser("ask", help="Run retrieve → generate and print the answer")
+    ask_parser = sub.add_parser(
+        "ask",
+        help="Run hybrid retrieve → generate and print the answer",
+    )
     ask_parser.add_argument("question", help="Question to ask the RAG graph")
     ask_parser.add_argument(
         "--filters",

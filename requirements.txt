@@ -8,3 +8,4 @@ pydantic-settings
 google-genai
 openai
 python-dotenv
+rank-bm25

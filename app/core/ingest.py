@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from app.config import settings
+from app.core.bm25 import update_bm25_corpus
 from app.core.chunking import chunk_pages
 from app.core.embeddings import embed_documents
 from app.core.pdf_loader import list_pdfs, load_pdf
@@ -14,6 +15,7 @@ def ingest_pdf(pdf_path: str | Path) -> dict:
     chunks = chunk_pages(pages)
     embeddings = embed_documents([chunk["text"] for chunk in chunks])
     stored = upsert_chunks(chunks, embeddings)
+    update_bm25_corpus(path.name, chunks)
     return {
         "document": path.name,
         "pages": len(pages),

@@ -34,7 +34,7 @@ class IngestResponse(BaseModel):
 
 
 class AskFilters(BaseModel):
-    """Optional Qdrant payload filters applied before vector search."""
+    """Optional metadata filters applied to both vector search and BM25."""
 
     section: str | None = Field(default=None, examples=["Retrieval"])
     document: str | None = Field(default=None, examples=["Document.pdf"])

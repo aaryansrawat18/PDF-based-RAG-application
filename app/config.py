@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     chunk_size: int = 800
     chunk_overlap: int = 150
     retrieve_k: int = 5
+    rrf_k: int = 60
+    bm25_corpus_path: str = "vectorstore_db/bm25_corpus.json"
 
     source_pdfs_dir: str = "data/source_pdfs"
 

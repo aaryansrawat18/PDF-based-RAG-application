@@ -46,3 +46,30 @@ def filters_to_qdrant(filters: Mapping[str, Any] | None) -> Filter | None:
         )
 
     return Filter(must=must) if must else None
+
+
+def chunk_matches_filters(chunk: Mapping[str, Any], filters: Mapping[str, Any] | None) -> bool:
+    """True if this chunk would pass the same filters we send to Qdrant.
+
+    BM25 has no Qdrant filter, so we apply the rules here in Python.
+    """
+    data = _as_dict(filters)
+    if not data:
+        return True
+
+    for field in _EXACT_KEYWORD_FIELDS:
+        wanted = data.get(field)
+        if wanted is None or wanted == "":
+            continue
+        if str(chunk.get(field, "")) != str(wanted):
+            return False
+
+    page = chunk.get("page")
+    if data.get("page") is not None and page != int(data["page"]):
+        return False
+    if data.get("page_gte") is not None and (page is None or page < int(data["page_gte"])):
+        return False
+    if data.get("page_lte") is not None and (page is None or page > int(data["page_lte"])):
+        return False
+
+    return True

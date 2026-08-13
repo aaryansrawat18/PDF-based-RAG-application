@@ -1,34 +1,37 @@
 from functools import lru_cache
 
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 
 from app.config import settings
 
-_BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+# OpenAI allows up to 2048 inputs per embeddings request.
+_EMBED_BATCH_SIZE = 128
 
 
 @lru_cache(maxsize=1)
-def get_model() -> SentenceTransformer:
-    return SentenceTransformer(settings.embedding_model)
+def _client() -> OpenAI:
+    if not settings.openai_api_key:
+        raise RuntimeError("OPENAI_API_KEY is missing. Copy .env.example to .env and set it.")
+    return OpenAI(api_key=settings.openai_api_key)
 
 
-def _is_bge() -> bool:
-    return "bge" in settings.embedding_model.lower()
+def _embed_batch(texts: list[str]) -> list[list[float]]:
+    response = _client().embeddings.create(
+        model=settings.embedding_model,
+        input=texts,
+    )
+    ordered = sorted(response.data, key=lambda item: item.index)
+    return [item.embedding for item in ordered]
 
 
 def embed_documents(texts: list[str]) -> list[list[float]]:
     if not texts:
         return []
-    vectors = get_model().encode(
-        texts,
-        normalize_embeddings=True,
-        show_progress_bar=len(texts) > 16,
-        batch_size=32,
-    )
-    return vectors.tolist()
+    vectors: list[list[float]] = []
+    for start in range(0, len(texts), _EMBED_BATCH_SIZE):
+        vectors.extend(_embed_batch(texts[start : start + _EMBED_BATCH_SIZE]))
+    return vectors
 
 
 def embed_query(text: str) -> list[float]:
-    query = f"{_BGE_QUERY_PREFIX}{text}" if _is_bge() else text
-    vector = get_model().encode([query], normalize_embeddings=True)[0]
-    return vector.tolist()
+    return _embed_batch([text])[0]

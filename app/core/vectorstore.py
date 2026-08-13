@@ -27,12 +27,24 @@ def get_client() -> QdrantClient:
     return QdrantClient(path=settings.qdrant_path)
 
 
+def _collection_vector_size(name: str) -> int | None:
+    info = get_client().get_collection(name)
+    vectors = info.config.params.vectors
+    if hasattr(vectors, "size"):
+        return int(vectors.size)
+    return None
+
+
 def ensure_collection(vector_size: int) -> None:
     client = get_client()
     name = settings.qdrant_collection
     existing = {c.name for c in client.get_collections().collections}
     if name in existing:
-        return
+        current = _collection_vector_size(name)
+        if current == vector_size:
+            return
+        # Old BGE (384-d) collections cannot store OpenAI (1536-d) vectors.
+        client.delete_collection(name)
     client.create_collection(
         collection_name=name,
         vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),

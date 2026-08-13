@@ -1,9 +1,9 @@
 fastapi
 uvicorn
+httpx
 langgraph
 pymupdf
 qdrant-client
-sentence-transformers
 pydantic-settings
 google-genai
 openai

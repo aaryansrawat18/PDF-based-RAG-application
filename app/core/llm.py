@@ -1,3 +1,5 @@
+from openai import OpenAI
+
 from app.config import settings
 
 
@@ -7,7 +9,21 @@ def generate(prompt: str) -> str:
         return _generate_openai(prompt)
     if provider == "gemini":
         return _generate_gemini(prompt)
-    raise ValueError(f"Unsupported LLM_PROVIDER={settings.llm_provider!r}. Use gemini or openai.")
+    raise ValueError(f"Unsupported LLM_PROVIDER={settings.llm_provider!r}. Use openai or gemini.")
+
+
+def _generate_openai(prompt: str) -> str:
+    if not settings.openai_api_key:
+        raise RuntimeError("OPENAI_API_KEY is missing. Copy .env.example to .env and set it.")
+    client = OpenAI(api_key=settings.openai_api_key)
+    response = client.chat.completions.create(
+        model=settings.openai_model,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    text = response.choices[0].message.content
+    if not text:
+        raise RuntimeError("OpenAI returned an empty response.")
+    return text.strip()
 
 
 def _generate_gemini(prompt: str) -> str:
@@ -23,20 +39,4 @@ def _generate_gemini(prompt: str) -> str:
     text = getattr(response, "text", None)
     if not text:
         raise RuntimeError("Gemini returned an empty response.")
-    return text.strip()
-
-
-def _generate_openai(prompt: str) -> str:
-    if not settings.openai_api_key:
-        raise RuntimeError("OPENAI_API_KEY is missing. Copy .env.example to .env and set it.")
-    from openai import OpenAI
-
-    client = OpenAI(api_key=settings.openai_api_key)
-    response = client.chat.completions.create(
-        model=settings.openai_model,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    text = response.choices[0].message.content
-    if not text:
-        raise RuntimeError("OpenAI returned an empty response.")
     return text.strip()

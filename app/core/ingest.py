@@ -18,6 +18,8 @@ def ingest_pdf(pdf_path: str | Path) -> dict:
         "document": path.name,
         "pages": len(pages),
         "chunks": stored,
+        "tables": sum(len(page.get("tables") or []) for page in pages),
+        "figures": sum(len(page.get("figures") or []) for page in pages),
     }
 
 

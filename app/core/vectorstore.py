@@ -76,6 +76,7 @@ def upsert_chunks(chunks: list[dict], embeddings: list[list[float]]) -> int:
                 "page": chunk["page"],
                 "document": chunk["document"],
                 "chunk_id": chunk["chunk_id"],
+                "content_type": chunk.get("content_type", "text"),
             },
         )
         for chunk, vector in zip(chunks, embeddings, strict=True)
@@ -115,6 +116,7 @@ def similarity_search(query_vector: list[float], k: int | None = None) -> list[d
                 "page": payload.get("page"),
                 "document": payload.get("document"),
                 "chunk_id": payload.get("chunk_id"),
+                "content_type": payload.get("content_type", "text"),
                 "score": float(point.score),
             }
         )

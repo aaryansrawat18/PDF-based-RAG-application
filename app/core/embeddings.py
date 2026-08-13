@@ -32,7 +32,3 @@ def embed_query(text: str) -> list[float]:
     query = f"{_BGE_QUERY_PREFIX}{text}" if _is_bge() else text
     vector = get_model().encode([query], normalize_embeddings=True)[0]
     return vector.tolist()
-
-
-def embedding_dim() -> int:
-    return get_model().get_sentence_embedding_dimension()

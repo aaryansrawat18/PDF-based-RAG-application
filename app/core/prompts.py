@@ -1,5 +1,7 @@
 SYSTEM_PROMPT = (
     "You are a helpful RAG assistant. Answer using only the provided context. "
+    "Context may include prose, markdown tables, and figure captions. "
+    "Read tables by matching column headers to row values. "
     "If the context does not contain the answer, say you don't know. "
     "Cite page numbers from the context when you use them."
 )
@@ -13,8 +15,11 @@ def build_prompt(question: str, retrieved: list[dict]) -> str:
         for index, chunk in enumerate(retrieved, start=1):
             document = chunk.get("document", "unknown")
             page = chunk.get("page", "?")
+            content_type = chunk.get("content_type", "text")
             text = chunk.get("text", "")
-            parts.append(f"[{index}] document={document} page={page}\n{text}")
+            parts.append(
+                f"[{index}] document={document} page={page} type={content_type}\n{text}"
+            )
         context = "\n\n".join(parts)
 
     return (

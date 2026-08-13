@@ -22,6 +22,7 @@ def generate_node(state: RAGState) -> dict:
             "page": chunk.get("page"),
             "document": chunk.get("document"),
             "chunk_id": chunk.get("chunk_id"),
+            "content_type": chunk.get("content_type", "text"),
             "score": chunk.get("score"),
         }
         for chunk in retrieved

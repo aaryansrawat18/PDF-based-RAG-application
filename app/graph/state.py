@@ -6,6 +6,7 @@ class RetrievedChunk(TypedDict, total=False):
     page: int
     document: str
     chunk_id: str
+    content_type: str
     score: float
 
 

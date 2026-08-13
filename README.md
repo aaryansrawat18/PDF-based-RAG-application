@@ -722,19 +722,8 @@ API / graph-decision / observability / eval unit tests mock external calls where
 ---
 
 ## Demo video
+https://youtu.be/J6OdC6DpTBg
 
-Attach / link the demo video with the submission (screen recording of setup → ingest → `/ask` → sources in the response).
-
-Suggested demo script (≈3–5 minutes):
-
-1. Show project structure and `.env` (key redacted)  
-2. Start `uvicorn app.main:app --reload`  
-3. Hit `/docs` → `POST /ingest` with `Document.pdf`  
-4. `POST /ask` with *“What is Retrieval-Augmented Generation?”*  
-5. Show `answer`, `sources[].page`, and `latency_ms`  
-6. (Optional) Open LangSmith run or a short eval snippet  
-
-If you keep a link file in the repo, place it at `demo_video_link.md` with the Drive / Loom / YouTube URL.
 
 ---
 
